@@ -16,10 +16,8 @@ return new class extends Migration
         Schema::create('medecins', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // lien avec users
-        $table->enum('sexe', ['homme', 'femme'])->nullable();
         $table->string('specialite')->nullable();
         $table->string('numero_inscription')->unique();
-        $table->string('telephone')->nullable();
         $table->timestamps();
         });
     }

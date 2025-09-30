@@ -16,10 +16,8 @@ return new class extends Migration
         Schema::create('infirmiers', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-        $table->enum('sexe', ['homme', 'femme'])->nullable();
         $table->string('numero_inscription')->unique();
         $table->string('departement')->nullable();
-        $table->string('telephone')->nullable();
         $table->timestamps();
     });
 

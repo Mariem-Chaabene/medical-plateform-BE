@@ -17,9 +17,7 @@ return new class extends Migration
         $table->id();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete(); // lien avec table users
         $table->date('date_naissance')->nullable();
-        $table->enum('sexe', ['homme', 'femme'])->nullable();
         $table->string('adresse')->nullable();
-        $table->string('telephone')->nullable();
         $table->text('antecedents')->nullable(); // antécédents médicaux
         $table->timestamps();
     });

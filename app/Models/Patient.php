@@ -9,7 +9,7 @@ class Patient extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'user_id', 'date_naissance', 'sexe', 'adresse', 'telephone', 'antecedents'
+        'user_id', 'date_naissance',  'adresse', 'antecedents'
     ];
 
     public function user()
