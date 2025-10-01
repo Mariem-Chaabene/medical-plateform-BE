@@ -19,7 +19,7 @@ class RolesAndPermissionsSeeder extends Seeder
          // Créer les rôles
         $roles = ['admin', 'medecin', 'infirmier', 'patient'];
         foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'api']);
         }
         // (Optionnel) Créer des permissions
         $permissions = [
@@ -32,17 +32,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'user.manage',         // admin only
         ];
         foreach ($permissions as $perm) {
-            Permission::firstOrCreate(['name' => $perm]);
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'api']);
         }
         // Assigner les permissions aux rôles
-        Role::findByName('admin')->givePermissionTo(Permission::all());
-        Role::findByName('medecin')->givePermissionTo([
+        Role::findByName('admin', 'api')->givePermissionTo(Permission::all());
+        Role::findByName('medecin', 'api')->givePermissionTo([
             'patient.view', 'patient.create', 'observation.create', 'note.create', 'message.send', 'prescription.create'
         ]);
-        Role::findByName('infirmier')->givePermissionTo([
+        Role::findByName('infirmier', 'api')->givePermissionTo([
             'patient.view', 'observation.create', 'note.create', 'message.send'
         ]);
-        Role::findByName('patient')->givePermissionTo([
+        Role::findByName('patient', 'api')->givePermissionTo([
             'patient.view'
         ]);
     }

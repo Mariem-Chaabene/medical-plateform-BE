@@ -5,11 +5,17 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class AdminSeeder extends Seeder
 {
     public function run()
     {
+        $role = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'api',
+        ]);
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
@@ -21,8 +27,8 @@ class AdminSeeder extends Seeder
             ]
         );
 
-        $admin->assignRole('admin');
-
+        $admin->assignRole($role);
+        
         $this->command->info("✅ Premier admin créé !");
     }
 }
