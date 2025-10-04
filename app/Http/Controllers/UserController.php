@@ -153,4 +153,101 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+
+
+    // LIST MEDICOS
+    public function listMedecins()
+    {
+        $admin = Auth::user();
+        if (!$admin->hasRole('admin')) {
+            return response()->json(['message' => 'Accès refusé, seulement admin'], 403);
+        }
+
+        $medecins = \App\Models\Medecin::with('user')->get();
+        return response()->json($medecins);
+    }
+
+
+    // LIST PATIENTS
+    public function listPatients()
+    {
+        $admin = Auth::user();
+        if (!$admin->hasRole('admin')) {
+            return response()->json(['message' => 'Accès refusé, seulement admin'], 403);
+        }
+
+        $patients = \App\Models\Patient::with('user')->get();
+        return response()->json($patients);
+    }
+
+
+    // LIST INFIRMIERS
+    public function listInfirmiers()
+    {
+        $admin = Auth::user();
+        if (!$admin->hasRole('admin')) {
+            return response()->json(['message' => 'Accès refusé, seulement admin'], 403);
+        }
+
+        $infirmiers = \App\Models\Infirmier::with('user')->get();
+        return response()->json($infirmiers);
+    }
+
+
+    public function updateUser(Request $request, $id)
+    {
+        $admin = Auth::user();
+        if (!$admin->hasRole('admin')) {
+            return response()->json(['message' => 'Accès refusé, seulement admin'], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        return DB::transaction(function () use ($request, $user) {
+            // Champs communs
+            $user->update($request->only(['name', 'surname', 'email', 'sexe', 'telephone']));
+
+            // Mettre à jour la table spécifique selon le rôle
+            if ($user->hasRole('medecin')) {
+                $user->medecin->update($request->only(['specialite', 'numero_inscription']));
+            } elseif ($user->hasRole('patient')) {
+                $user->patient->update($request->only(['date_naissance', 'adresse', 'antecedents']));
+            } elseif ($user->hasRole('infirmier')) {
+                $user->infirmier->update($request->only(['numero_inscription', 'departement']));
+            }
+
+            return response()->json([
+                'message' => 'Utilisateur mis à jour avec succès',
+                'user' => $user->load('roles')
+            ]);
+        });
+    }
+
+
+    public function deleteUser($id)
+    {
+        $admin = Auth::user();
+        if (!$admin->hasRole('admin')) {
+            return response()->json(['message' => 'Accès refusé, seulement admin'], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        return DB::transaction(function () use ($user) {
+            // Supprimer la table spécifique
+            if ($user->hasRole('medecin') && $user->medecin) {
+                $user->medecin->delete();
+            } elseif ($user->hasRole('patient') && $user->patient) {
+                $user->patient->delete();
+            } elseif ($user->hasRole('infirmier') && $user->infirmier) {
+                $user->infirmier->delete();
+            }
+
+            // Supprimer l'utilisateur
+            $user->delete();
+
+            return response()->json(['message' => 'Utilisateur supprimé avec succès']);
+        });
+    }
+
 }

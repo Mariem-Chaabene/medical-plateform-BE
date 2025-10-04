@@ -96,6 +96,11 @@ return [
         'team_foreign_key' => 'team_id',
     ],
 
+    
+    'defaults' => [
+        'guard' => 'api', // ✅ Changement ici pour utiliser 'api'
+    ],
+
     /*
      * When set to true, the method for checking permissions will be registered on the gate.
      * Set this to false if you want to implement custom logic for checking permissions.
