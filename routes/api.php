@@ -5,6 +5,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 
+use App\Http\Controllers\{
+    DmeController,
+    ConsultationController,
+    ExamenController,
+    HistoriqueDmeController,
+    TypeExamenController,
+    TypeAnalyseController,
+    PatientController
+};
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -15,6 +24,11 @@ use App\Http\Controllers\RoleController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+Route::apiResource('patients', PatientController::class);
+Route::get('/patients/no-dme', [PatientController::class, 'patientsWithoutDme']);
+
+
 // Login (public)
 Route::post('login', [UserController::class, 'login']);
 
@@ -38,7 +52,21 @@ Route::middleware(['auth:api'])->group(function () {
 
         // Lister les types spécifiques
         Route::get('/medecins', [UserController::class, 'listMedecins']);
-        Route::get('/patients', [UserController::class, 'listPatients']);
         Route::get('/infirmiers', [UserController::class, 'listInfirmiers']);
     });
 });
+
+
+/*
+Route::get('/dmes/groupes-sanguins', function() {
+    return response()->json(\App\Models\Dme::GROUPES_SANGUINS);
+});*/
+
+
+Route::apiResource('dmes', DmeController::class);
+Route::apiResource('consultations', ConsultationController::class);
+Route::apiResource('examens', ExamenController::class);
+Route::apiResource('type-examens', TypeExamenController::class);
+Route::apiResource('type-analyses', TypeAnalyseController::class);
+
+Route::get('patients/{patient}/historique', [HistoriqueDmeController::class, 'show']);

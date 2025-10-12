@@ -32,6 +32,11 @@ class Dme extends Model
         return $this->hasMany(TraitementChronique::class);
     }
 
+    public function antecedentsMedicaux()
+    {
+        return $this->hasMany(AntecedentMedical::class);
+    }
+    
     public function analyses()
     {
         return $this->hasMany(Analyse::class);

@@ -16,4 +16,10 @@ class Patient extends Model
     {
         return $this->belongsTo(User::class);
     }
+    
+    public function dme()
+    {
+        return $this->hasOne(Dme::class);
+    }
+
 }

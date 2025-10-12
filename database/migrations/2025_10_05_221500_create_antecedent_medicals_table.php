@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('antecedent_medicals');
+        Schema::dropIfExists('antecedents_medicaux');
     }
 };
