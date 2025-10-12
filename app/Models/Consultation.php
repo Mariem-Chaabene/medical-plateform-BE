@@ -26,4 +26,10 @@ class Consultation extends Model
     {
         return $this->hasMany(Examen::class);
     }
+    
+    public function analyses()
+    {
+        return $this->hasMany(Analyse::class);
+    }
+
 }

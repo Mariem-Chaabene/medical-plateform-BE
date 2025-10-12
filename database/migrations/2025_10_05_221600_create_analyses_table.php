@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('analyses', function (Blueprint $table) {
         $table->id();
         $table->foreignId('dme_id')->constrained('dmes')->cascadeOnDelete();
+        $table->foreignId('consultation_id')->nullable()->constrained('consultations')->cascadeOnDelete();
         $table->foreignId('type_analyse_id')->constrained('type_analyses')->cascadeOnDelete(); // ✅ directement ici
         $table->dateTime('date_analyse')->nullable();
         $table->text('resultat')->nullable();

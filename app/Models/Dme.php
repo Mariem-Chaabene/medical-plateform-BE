@@ -40,7 +40,7 @@ class Dme extends Model
     //Cela permet d’accéder à tous les examens d’un DME sans passer explicitement par les consultations.
     public function examens()
     {
-        return $this->hasManyThrough(Examen::class, Consultation::class);
+        return $this->hasMany(Examen::class);
     }
 }
 

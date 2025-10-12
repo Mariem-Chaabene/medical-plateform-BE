@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class TypeAnalyse extends Model
 {
     use HasFactory;
-    use HasFactory;
+    
     protected $fillable = ['libelle'];
     
     public function analyses()

@@ -15,7 +15,8 @@ return new class extends Migration
     {
         Schema::create('examens', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('consultation_id')->constrained('consultations')->cascadeOnDelete();
+        $table->foreignId('dme_id')->constrained('dmes')->cascadeOnDelete();
+        $table->foreignId('consultation_id')->nullable()->constrained('consultations')->cascadeOnDelete();
         $table->foreignId('type_examen_id')->constrained('type_examens')->restrictOnDelete();
         $table->dateTime('date_examen')->nullable();
         $table->enum('etat', ['en_attente','en_cours','termine'])->default('en_attente');
