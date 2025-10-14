@@ -8,8 +8,19 @@ use Illuminate\Database\Eloquent\Model;
 class Consultation extends Model
 {
     use HasFactory;
-     protected $fillable = [
-        'dme_id', 'medecin_id', 'date_consultation', 'diagnostic', 'traitement'
+    protected $fillable = [
+        'dme_id',
+        'medecin_id',
+        'date_consultation',
+        'diagnostic',
+        'traitement',
+        'motif',
+        'poids',
+        'taille',
+        'imc',
+        'temperature',
+        'frequence_cardiaque',
+        'pression_arterielle'
     ];
 
     public function dme()
@@ -21,15 +32,14 @@ class Consultation extends Model
     {
         return $this->belongsTo(User::class, 'medecin_id');
     }
-    
+
     public function examens()
     {
         return $this->hasMany(Examen::class);
     }
-    
+
     public function analyses()
     {
         return $this->hasMany(Analyse::class);
     }
-
 }
