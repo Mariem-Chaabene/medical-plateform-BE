@@ -18,9 +18,8 @@ class ExamenController extends Controller
     // 📌 Lister tous les examens (admin)
     public function index()
     {
-        return response()->json(
-            Examen::with(['dme', 'typeExamen'])->get()
-        );
+        $examens = Examen::with(['dme.patient', 'consultation', 'type'])->get();
+        return response()->json($examens, 200);
     }
 
 
@@ -41,51 +40,49 @@ class ExamenController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    // 📌 Créer un examen
-    // public function store(Request $request, $patientId)
-    // {
-    //     $validated = $request->validate([
-    //         'dme_id' => 'required|exists:dmes,id',
-    //         'type_examen_id' => 'required|exists:type_examens,id',
-    //         'date_examen' => 'required|date',
-    //         'resultats' => 'nullable|string',
-    //     ]);
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'dme_id' => 'required|exists:dmes,id',
+            'consultation_id' => 'nullable|exists:consultations,id',
+            'type_examen_id' => 'required|exists:type_examens,id',
+            'date_examen' => 'required|date',
+            'etat' => 'nullable|in:en_attente,en_cours,termine',
+            'resultat' => 'nullable|string',
+            'remarques' => 'nullable|string',
+        ]);
 
-    //     $examen = Examen::create([
-    //         'dme_id' => 'required|exists:dmes,id',
-    //         'type_examen_id' => $validated['type_examen_id'],
-    //         'date_examen' => $validated['date_examen'],
-    //         'resultats' => $validated['resultats'] ?? null,
-    //     ]);
+        $examen = Examen::create($validated);
 
-    //     return response()->json($examen, 201);
-    // }
+        return response()->json($examen, 201);
+    }
 
 
-public function storeForConsultation(Request $request, $consultationId)
-{
-    $request->validate([
-        'examens' => 'required|array'
-    ]);
 
-    return DB::transaction(function() use ($request, $consultationId) {
-        $consultation = Consultation::findOrFail($consultationId);
+// public function storeForConsultation(Request $request, $consultationId)
+// {
+//     $request->validate([
+//         'examens' => 'required|array'
+//     ]);
 
-        $examens = [];
-        foreach ($request->examens as $exam) {
-            $type = TypeExamen::where('code', $exam['type_examen_code'])->firstOrFail();
-            $examens[] = Examen::create([
-                'consultation_id' => $consultation->id,
-                'type_examen_id' => $type->id,
-                'date_examen' => $exam['date_examen'] ?? null,
-                'etat' => 'pending',
-                'remarques' => $exam['remarques'] ?? null
-            ]);
-        }
+//     return DB::transaction(function() use ($request, $consultationId) {
+//         $consultation = Consultation::findOrFail($consultationId);
 
-        return response()->json($examens, 201);
-    });
-}
+//         $examens = [];
+//         foreach ($request->examens as $exam) {
+//             $type = TypeExamen::where('code', $exam['type_examen_code'])->firstOrFail();
+//             $examens[] = Examen::create([
+//                 'consultation_id' => $consultation->id,
+//                 'type_examen_id' => $type->id,
+//                 'date_examen' => $exam['date_examen'] ?? null,
+//                 'etat' => 'pending',
+//                 'remarques' => $exam['remarques'] ?? null
+//             ]);
+//         }
+
+//         return response()->json($examens, 201);
+//     });
+// }
 
 
 
@@ -95,10 +92,10 @@ public function storeForConsultation(Request $request, $consultationId)
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Examen $examen)
     {
-        $examen = Examen::with(['dme', 'typeExamen'])->findOrFail($id);
-        return response()->json($examen);
+        $examen->load(['dme.patient', 'consultation', 'type']);
+        return response()->json($examen, 200);
     }
 
     /**
@@ -108,18 +105,23 @@ public function storeForConsultation(Request $request, $consultationId)
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Examen $examen)
     {
-        $examen = Examen::findOrFail($id);
-
-        $data = $request->validate([
-            'type_examen_id' => 'sometimes|exists:type_examens,id',
-            'date' => 'sometimes|date',
-            'resultats' => 'nullable|string'
+        $request->validate([
+            'dme_id' => ['sometimes', 'exists:dmes,id'],
+            'consultation_id' => ['nullable', 'exists:consultations,id'],
+            'type_examen_id' => ['sometimes', 'exists:type_examens,id'],
+            'date_examen' => ['nullable', 'date'],
+            'etat' => ['nullable', 'in:en_attente,en_cours,termine'],
+            'resultat' => ['nullable', 'string'],
+            'remarques' => ['nullable', 'string'],
         ]);
 
-        $examen->update($data);
-        return response()->json($examen);
+        $examen->update($request->all());
+
+        $examen->load(['dme.patient', 'consultation', 'type']);
+
+        return response()->json($examen, 200);
     }
 
     /**

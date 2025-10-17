@@ -51,22 +51,22 @@ class TypeAnalyseController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'libelle' => 'required|string|max:255|unique:type_analyses,libelle',
+        $request->validate([
+            'libelle' => 'required|string|unique:type_analyses,libelle',
         ]);
 
-        return DB::transaction(function() use ($data) {
-            $type = TypeAnalyse::create($data);
-            return response()->json($type, 201);
-        });
+        $type = TypeAnalyse::create([
+            'libelle' => $request->libelle,
+        ]);
+
+        return response()->json([
+            'message' => 'Type d\'analyse créé avec succès',
+            'data' => $type
+        ], 201);
     }
 
-
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Afficher un type d'analyse spécifique
      */
     public function show($id)
     {
@@ -75,50 +75,36 @@ class TypeAnalyseController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Mettre à jour un type d'analyse
      */
     public function update(Request $request, $id)
     {
         $type = TypeAnalyse::findOrFail($id);
 
-        $data = $request->validate([
-            'libelle' => [
-                'sometimes',
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('type_analyses', 'libelle')->ignore($type->id),
-            ],
+        $request->validate([
+            'libelle' => 'required|string|unique:type_analyses,libelle,' . $type->id,
         ]);
 
-        return DB::transaction(function() use ($type, $data) {
-            $type->update($data);
-            return response()->json($type);
-        });
+        $type->update([
+            'libelle' => $request->libelle,
+        ]);
+
+        return response()->json([
+            'message' => 'Type d\'analyse mis à jour avec succès',
+            'data' => $type
+        ]);
     }
+
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Supprimer un type d'analyse
      */
     public function destroy($id)
     {
         $type = TypeAnalyse::findOrFail($id);
+        $type->delete();
 
-        return DB::transaction(function() use ($type) {
-            if ($type->analyses()->exists()) {
-                return response()->json([
-                    'message' => 'Impossible de supprimer : des analyses existent pour ce type.'
-                ], 422);
-            }
-
-            $type->delete();
-            return response()->json(['message' => 'Type d\'analyse supprimé.']);
-        });
+        return response()->json([
+            'message' => 'Type d\'analyse supprimé avec succès'
+        ]);
     }
 }

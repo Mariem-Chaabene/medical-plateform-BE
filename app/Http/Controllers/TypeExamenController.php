@@ -72,10 +72,9 @@ class TypeExamenController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(TypeExamen $typeExamen)
     {
-        $type = TypeExamen::findOrFail($id);
-        return response()->json($type);
+        return response()->json($typeExamen, 200);
     }
 
     /**
@@ -113,21 +112,18 @@ class TypeExamenController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(TypeExamen $typeExamen)
     {
-        $type = TypeExamen::findOrFail($id);
+        // ⚠️ Vérification facultative pour éviter la suppression s'il y a des examens liés
+        if ($typeExamen->examens()->exists()) {
+            return response()->json([
+                'message' => 'Impossible de supprimer ce type d\'examen car il est utilisé dans des examens.'
+            ], 409);
+        }
 
-        return DB::transaction(function() use ($type) {
-            // Option de sécurité : empêcher la suppression si des examens existent
-            if ($type->examens()->exists()) {
-                return response()->json([
-                    'message' => 'Impossible de supprimer : des examens existent pour ce type.'
-                ], 422);
-            }
+        $typeExamen->delete();
 
-            $type->delete();
-            return response()->json(['message' => 'Type d\'examen supprimé.']);
-        });
+        return response()->json(['message' => 'Type d\'examen supprimé avec succès.'], 200);
     }
     
 }

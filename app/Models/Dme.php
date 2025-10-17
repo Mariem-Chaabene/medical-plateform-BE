@@ -36,7 +36,8 @@ class Dme extends Model
     {
         return $this->hasMany(AntecedentMedical::class);
     }
-    
+
+    //Cela permet d’accéder à tous les analyses d’un DME sans passer explicitement par les consultations.
     public function analyses()
     {
         return $this->hasMany(Analyse::class);

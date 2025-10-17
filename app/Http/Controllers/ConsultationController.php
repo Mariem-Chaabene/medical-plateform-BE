@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Consultation;
 use App\Models\Examen;
 use App\Models\TypeExamen;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ConsultationController extends Controller
@@ -20,16 +21,42 @@ class ConsultationController extends Controller
      * Lister toutes les consultations d’un DME
      */
     public function index()
-    {
-        $consultations = Consultation::with([
-            'dme.patient',
-            'medecin',
-            'examens.typeExamen',
-            'analyses.typeAnalyse'
-        ])->get();
+{
+    $consultations = Consultation::with([
+        'dme.patient',
+        'medecin',
+        'examens.typeExamen',
+        'analyses.typeAnalyse'
+    ])
+    ->orderBy('date_consultation', 'desc')
+    ->get()
+    ->map(function ($consultation) {
+        return [
+            'id' => $consultation->id,
+            'dme_id' => $consultation->dme_id,
+            'medecin_id' => $consultation->medecin_id,
+            'date_consultation' => $consultation->date_consultation,
+            'diagnostic' => $consultation->diagnostic,
+            'traitement' => $consultation->traitement,
+            'motif' => $consultation->motif,
+            'poids' => $consultation->poids,
+            'taille' => $consultation->taille,
+            'imc' => $consultation->imc,
+            'temperature' => $consultation->temperature,
+            'frequence_cardiaque' => $consultation->frequence_cardiaque,
+            'pression_arterielle' => $consultation->pression_arterielle,
+            'dme' => $consultation->dme,
+            'patient' => $consultation->dme->patient ?? null,
+            'medecin' => $consultation->medecin,
+            'examens' => $consultation->examens,
+            'analyses' => $consultation->analyses,
+        ];
+    });
 
-        return response()->json($consultations);
-    }
+    return response()->json($consultations);
+}
+
+
 
 
 
@@ -52,25 +79,47 @@ class ConsultationController extends Controller
      * @return \Illuminate\Http\Response
      */
         // 📌 Ajouter une nouvelle consultation
-    public function store(Request $request)
+   public function store(Request $request)
     {
         $request->validate([
-            'dme_id' => 'required|exists:dmes,id',
-            'date_consultation' => 'required|date',
-            'diagnostic' => 'nullable|string',
-            'traitement' => 'nullable|string',
+            'dme_id' => ['required', 'exists:dmes,id'],
+            'date_consultation' => ['required', 'date'],
+            'diagnostic' => ['nullable', 'string'],
+            'traitement' => ['nullable', 'string'],
+            'motif' => ['nullable', 'string'],
+            'poids' => ['nullable', 'numeric'],
+            'taille' => ['nullable', 'numeric'],
+            'temperature' => ['nullable', 'numeric'],
+            'frequence_cardiaque' => ['nullable', 'integer'],
+            'pression_arterielle' => ['nullable', 'string']
         ]);
 
-        // si tu veux prendre le médecin connecté :
-        $medecinId = Auth::id(); 
+        // Si tu veux attribuer automatiquement le médecin connecté :
+        $medecinId = Auth::id() ?? $request->input('medecin_id');
+        $imc = null;
+
+        if ($request->poids && $request->taille) {
+            $taille_m = $request->taille / 100; // convertir cm en mètres
+            $imc = $taille_m > 0 ? round($request->poids / ($taille_m ** 2), 2) : null;
+        }
 
         $consultation = Consultation::create([
             'dme_id' => $request->dme_id,
             'medecin_id' => $medecinId,
             'date_consultation' => $request->date_consultation,
             'diagnostic' => $request->diagnostic,
-            'traitement' => $request->traitement
+            'traitement' => $request->traitement,
+            'motif' => $request->motif,
+            'poids' => $request->poids,
+            'taille' => $request->taille,
+            'imc' => $imc,
+            'temperature' => $request->temperature,
+            'frequence_cardiaque' => $request->frequence_cardiaque,
+            'pression_arterielle' => $request->pression_arterielle,
         ]);
+
+        // Charger les relations pour la réponse
+        $consultation->load('dme', 'medecin');
 
         return response()->json($consultation, 201);
     }
@@ -94,8 +143,28 @@ class ConsultationController extends Controller
             'analyses.typeAnalyse'
         ])->findOrFail($id);
 
-        return response()->json($consultation);
+        return response()->json([
+            'id' => $consultation->id,
+            'dme_id' => $consultation->dme_id,
+            'medecin_id' => $consultation->medecin_id,
+            'date_consultation' => $consultation->date_consultation,
+            'diagnostic' => $consultation->diagnostic,
+            'traitement' => $consultation->traitement,
+            'motif' => $consultation->motif,
+            'poids' => $consultation->poids,
+            'taille' => $consultation->taille,
+            'imc' => $consultation->imc,
+            'temperature' => $consultation->temperature,
+            'frequence_cardiaque' => $consultation->frequence_cardiaque,
+            'pression_arterielle' => $consultation->pression_arterielle,
+            'dme' => $consultation->dme,
+            'patient' => $consultation->dme->patient ?? null,
+            'medecin' => $consultation->medecin,
+            'examens' => $consultation->examens,
+            'analyses' => $consultation->analyses,
+        ]);
     }
+
 
     /**
      * Update the specified resource in storage.
@@ -104,24 +173,50 @@ class ConsultationController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        $consultation = Consultation::findOrFail($id);
+    public function update(Request $request, Consultation $consultation)
+{
+    $request->validate([
+        'dme_id' => ['sometimes', 'exists:dmes,id'],
+        'date_consultation' => ['sometimes', 'date'],
+        'diagnostic' => ['nullable', 'string'],
+        'traitement' => ['nullable', 'string'],
+        'motif' => ['nullable', 'string'],
+        'poids' => ['nullable', 'numeric'],
+        'taille' => ['nullable', 'numeric'],
+        'temperature' => ['nullable', 'numeric'],
+        'frequence_cardiaque' => ['nullable', 'integer'],
+        'pression_arterielle' => ['nullable', 'string']
+    ]);
 
-        $request->validate([
-            'date_consultation' => 'nullable|date',
-            'diagnostic' => 'nullable|string',
-            'traitement' => 'nullable|string',
-        ]);
+    // Mise à jour des champs seulement si fournis
+    $consultation->fill($request->only([
+        'dme_id',
+        'date_consultation',
+        'diagnostic',
+        'traitement',
+        'motif',
+        'poids',
+        'taille',
+        'temperature',
+        'frequence_cardiaque',
+        'pression_arterielle'
+    ]));
 
-        $consultation->update([
-            'date_consultation' => $request->date_consultation ?? $consultation->date_consultation,
-            'diagnostic' => $request->diagnostic ?? $consultation->diagnostic,
-            'traitement' => $request->traitement ?? $consultation->traitement
-        ]);
-
-        return response()->json($consultation);
+    // Recalcul automatique de l'IMC si poids et taille sont présents
+    if ($consultation->poids && $consultation->taille) {
+        $taille_m = $consultation->taille / 100; // convertir cm en mètres
+        $consultation->imc = $taille_m > 0 ? round($consultation->poids / ($taille_m ** 2), 2) : null;
+    } else {
+        $consultation->imc = null;
     }
+
+    $consultation->save();
+
+    // Charger relations pour la réponse
+    $consultation->load('dme', 'medecin');
+
+    return response()->json($consultation, 200);
+}
 
     /**
      * Remove the specified resource from storage.
@@ -155,6 +250,5 @@ class ConsultationController extends Controller
 
         return response()->json($consultations);
     }
-
 
 }
