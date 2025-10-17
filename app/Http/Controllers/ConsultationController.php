@@ -16,23 +16,33 @@ class ConsultationController extends Controller
      * @return \Illuminate\Http\Response
      */
 
+    /**
+     * Lister toutes les consultations d’un DME
+     */
     public function index()
     {
-        return response()->json(Consultation::with('dme')->get());
-    }
-
-
-
-    // 📌 Historique d’un patient (pour dossier)
-    public function historiquePatient($patientId)
-    {
-        $consultations = Consultation::with(['medecin.user'])
-            ->where('patient_id', $patientId)
-            ->orderBy('date_consultation', 'desc')
-            ->get();
+        $consultations = Consultation::with([
+            'dme.patient',
+            'medecin',
+            'examens.typeExamen',
+            'analyses.typeAnalyse'
+        ])->get();
 
         return response()->json($consultations);
     }
+
+
+
+    // // 📌 Historique d’un patient (pour dossier)
+    // public function historiquePatient($patientId)
+    // {
+    //     $consultations = Consultation::with(['medecin.user'])
+    //         ->where('patient_id', $patientId)
+    //         ->orderBy('date_consultation', 'desc')
+    //         ->get();
+
+    //     return response()->json($consultations);
+    // }
 
 
     /**
@@ -45,31 +55,24 @@ class ConsultationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'dme_id' => 'required|integer|exists:dmes,id',
-            'medecin_id' => 'required|integer|exists:medecins,id',
+            'dme_id' => 'required|exists:dmes,id',
             'date_consultation' => 'required|date',
             'diagnostic' => 'nullable|string',
-            'examens' => 'nullable|array'
+            'traitement' => 'nullable|string',
         ]);
 
-        return DB::transaction(function() use ($request) {
-            $consultation = Consultation::create($request->only(['dme_id','medecin_id','date_consultation','diagnostic']));
+        // si tu veux prendre le médecin connecté :
+        $medecinId = Auth::id(); 
 
-            if (!empty($request->examens)) {
-                foreach ($request->examens as $exam) {
-                    $type = TypeExamen::where('code', $exam['type_examen_code'])->firstOrFail();
-                    Examen::create([
-                        'consultation_id' => $consultation->id,
-                        'type_examen_id' => $type->id,
-                        'date_examen' => $exam['date_examen'] ?? null,
-                        'etat' => 'pending',
-                        'remarques' => $exam['remarques'] ?? null
-                    ]);
-                }
-            }
+        $consultation = Consultation::create([
+            'dme_id' => $request->dme_id,
+            'medecin_id' => $medecinId,
+            'date_consultation' => $request->date_consultation,
+            'diagnostic' => $request->diagnostic,
+            'traitement' => $request->traitement
+        ]);
 
-            return response()->json($consultation->load('examens'), 201);
-        });
+        return response()->json($consultation, 201);
     }
 
 
@@ -79,17 +82,20 @@ class ConsultationController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+     /**
+     * Afficher une seule consultation avec détails
+     */
     public function show($id)
     {
-        // Récupère la consultation avec ses examens, le DME et le patient associé
         $consultation = Consultation::with([
-            'examens',      // tous les examens liés
-            'dme.patient'   // le DME et le patient associé
+            'dme.patient',
+            'medecin',
+            'examens.typeExamen',
+            'analyses.typeAnalyse'
         ])->findOrFail($id);
 
         return response()->json($consultation);
     }
-
 
     /**
      * Update the specified resource in storage.
@@ -101,7 +107,19 @@ class ConsultationController extends Controller
     public function update(Request $request, $id)
     {
         $consultation = Consultation::findOrFail($id);
-        $consultation->update($request->all());
+
+        $request->validate([
+            'date_consultation' => 'nullable|date',
+            'diagnostic' => 'nullable|string',
+            'traitement' => 'nullable|string',
+        ]);
+
+        $consultation->update([
+            'date_consultation' => $request->date_consultation ?? $consultation->date_consultation,
+            'diagnostic' => $request->diagnostic ?? $consultation->diagnostic,
+            'traitement' => $request->traitement ?? $consultation->traitement
+        ]);
+
         return response()->json($consultation);
     }
 
@@ -111,11 +129,32 @@ class ConsultationController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-     public function destroy($id)
+    public function destroy($id)
     {
-        $consultation = Consultation::findOrFail($id);
-        $consultation->delete();
+        DB::transaction(function () use ($id) {
+            $consultation = Consultation::with(['examens', 'analyses'])->findOrFail($id);
 
-        return response()->json(['message' => 'Consultation supprimée']);
+            // Supprimer les examens et analyses liés avant la consultation
+            $consultation->examens()->delete();
+            $consultation->analyses()->delete();
+            $consultation->delete();
+        });
+
+        return response()->json(['message' => 'Consultation supprimée avec succès.']);
     }
+
+    /**
+     * Récupérer les consultations d'un DME spécifique
+     */
+    public function getByDme($dmeId)
+    {
+        $consultations = Consultation::where('dme_id', $dmeId)
+            ->with(['medecin', 'examens.typeExamen', 'analyses.typeAnalyse'])
+            ->orderBy('date_consultation', 'desc')
+            ->get();
+
+        return response()->json($consultations);
+    }
+
+
 }

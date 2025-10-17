@@ -68,5 +68,7 @@ Route::apiResource('consultations', ConsultationController::class);
 Route::apiResource('examens', ExamenController::class);
 Route::apiResource('type-examens', TypeExamenController::class);
 Route::apiResource('type-analyses', TypeAnalyseController::class);
+Route::apiResource('consultations', ConsultationController::class);
+
 
 Route::get('patients/{patient}/historique', [HistoriqueDmeController::class, 'show']);
