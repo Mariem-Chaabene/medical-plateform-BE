@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Http\Models\AntecedentMedical;
-use App\Http\Models\HistoriqueDme;
+use App\Models\AntecedentMedical;
 
 class AntecedentController extends Controller
 {
@@ -13,78 +12,63 @@ class AntecedentController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($dmeId)
+    public function index()
     {
-        return response()->json(AntecedentMedical::where('dme_id', $dmeId)->orderBy('date', 'desc')->get());
+        return AntecedentMedical::with('dme.patient.user')->get();
     }
 
-
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Créer un nouvel antécédent pour un DME
      */
-    public function store(Request $request, $dmeId)
-{
-    $request->validate([
-        'type' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'date' => 'nullable|date'
-    ]);
-
-    return DB::transaction(function() use ($request, $dmeId) {
-        $antecedent = AntecedentMedical::create([
-            'dme_id' => $dmeId,
-            'type' => $request->type,
-            'description' => $request->description,
-            'date' => $request->date
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'dme_id' => 'required|exists:dmes,id',
+            'nom_maladie' => 'required|string|max:255',
+            'date_diagnostic' => 'nullable|date',
+            'remarques' => 'nullable|string'
         ]);
 
-        HistoriqueDme::create([
-            'dme_id' => $dmeId,
-            'user_id' => auth()->id(),
-            'action' => 'create_antecedent',
-            'old' => null,
-            'new' => $antecedent->toArray()
-        ]);
+        $antecedent = AntecedentMedical::create($validated);
 
         return response()->json($antecedent, 201);
-    });
-}
-
+    }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Voir un antécédent spécifique
      */
     public function show($id)
     {
-        //
+        $antecedent = AntecedentMedical::with('dme.patient.user')->findOrFail($id);
+        return response()->json($antecedent);
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Modifier un antécédent
      */
     public function update(Request $request, $id)
     {
-        //
+        $antecedent = AntecedentMedical::findOrFail($id);
+
+        $data = $request->validate([
+            'nom_maladie' => 'sometimes|required|string|max:255',
+            'date_diagnostic' => 'sometimes|nullable|date',
+            'remarques' => 'sometimes|nullable|string'
+        ]);
+
+        $antecedent->update($data);
+
+        return response()->json($antecedent);
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Supprimer un antécédent
      */
     public function destroy($id)
     {
-        //
+        $antecedent = AntecedentMedical::findOrFail($id);
+        $antecedent->delete();
+
+        return response()->json(['message' => 'Antécédent supprimé avec succès']);
     }
 }

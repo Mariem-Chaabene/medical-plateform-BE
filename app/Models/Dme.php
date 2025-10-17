@@ -48,6 +48,12 @@ class Dme extends Model
     {
         return $this->hasMany(Examen::class);
     }
+
+    public function historiques()
+    {
+        return $this->hasMany(HistoriqueDme::class);
+    }
+
 }
 
 

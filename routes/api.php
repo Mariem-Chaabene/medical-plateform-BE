@@ -12,8 +12,11 @@ use App\Http\Controllers\{
     HistoriqueDmeController,
     TypeExamenController,
     TypeAnalyseController,
-    PatientController
+    PatientController,
+    AntecedentController,
+    TraitementChroniqueController
 };
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -69,6 +72,9 @@ Route::apiResource('examens', ExamenController::class);
 Route::apiResource('type-examens', TypeExamenController::class);
 Route::apiResource('type-analyses', TypeAnalyseController::class);
 Route::apiResource('consultations', ConsultationController::class);
+Route::apiResource('antecedents', AntecedentController::class);
+Route::apiResource('traitements', TraitementChroniqueController::class);
+Route::apiResource('historiques', HistoriqueDmeController::class);
 
 
 Route::get('patients/{patient}/historique', [HistoriqueDmeController::class, 'show']);

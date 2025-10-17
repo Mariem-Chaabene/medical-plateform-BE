@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Patient;
+use App\Models\HistoriqueDme;
 class HistoriqueDmeController extends Controller
 {
     /**
@@ -11,57 +12,41 @@ class HistoriqueDmeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $perPage = (int) $request->query('per_page', 20);
+        $query = HistoriqueDme::with('user', 'dme.patient');
+
+        // Filtrer par DME
+        if ($dmeId = $request->query('dme_id')) {
+            $query->where('dme_id', $dmeId);
+        }
+
+        // Filtrer par action
+        if ($action = $request->query('action')) {
+            $query->where('action', $action);
+        }
+
+        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Voir un historique spécifique
      */
-    public function store(Request $request)
+    public function show($id)
     {
-        //
+        $historique = HistoriqueDme::with('user', 'dme.patient')->findOrFail($id);
+        return response()->json($historique);
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($patientId)
-    {
-        $patient = Patient::with([
-            'dme.consultations',
-            'dme.examens.typeExamen'
-        ])->findOrFail($patientId);
-
-        return response()->json($patient);
-    }
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Supprimer un historique (optionnel)
      */
     public function destroy($id)
     {
-        //
+        $historique = HistoriqueDme::findOrFail($id);
+        $historique->delete();
+
+        return response()->json(['message' => 'Historique supprimé']);
     }
 }

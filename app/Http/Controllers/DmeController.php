@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Dme;
 use App\Models\Patient;
-use App\Models\HistoriqueDme;
 
 class DmeController extends Controller
 {
@@ -80,7 +79,9 @@ class DmeController extends Controller
             'patient.user',
             'antecedentsMedicaux',
             'consultations.examens.type',
-            'analyses.typeAnalyse'
+            'analyses.typeAnalyse',
+            'traitements',
+            'historiques.user'
         ])->findOrFail($id);
 
         return response()->json($dme);
